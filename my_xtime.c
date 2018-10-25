@@ -18,6 +18,7 @@ struct timespec time_spec1, time_spec2;
 static char * message;
 static char * seconds;
 static char * difference;
+static char * nanodifference;
 static int read_p;
 int readcount;
 
@@ -39,26 +40,40 @@ int xtime_proc_open (struct inode *sp_inode, struct file *sp_file)
 
 ssize_t xtime_proc_read(struct file *sp_file, char __user *buf, size_t size, loff_t *offset)
 {
+	unsigned long nanoresult;
 	if(readcount > 0)
 	{
 		time_spec2 = current_kernel_time();
 		unsigned long result =  time_spec2.tv_sec - time_spec1.tv_sec;
+		if(time_spec1.tv_nsec > time_spec2.tv_nsec)
+		  {
+			result--;
+			nanoresult = 1000000000 + time_spec2.tv_nsec - time_spec1.tv_nsec;
+		  }
+		else
+		  nanoresult = time_spec2.tv_nsec - time_spec1.tv_nsec;
+		
 		read_p = !read_p;
         	if (read_p)
                 	return 0;
        		printk(KERN_INFO "proc called read\n");
        		seconds = kmalloc(sizeof(char) * 20, __GFP_RECLAIM | __GFP_IO | __GFP_FS);
-        	sprintf(seconds, "%lu", time_spec2.tv_sec );
+		sprintf(seconds, "%lu.%.*lu", time_spec2.tv_sec, 9, time_spec2.tv_nsec);
         	strcat(seconds,"\n");
        		strcat(message, seconds );
 
 		difference = kmalloc(sizeof(char) * 20, __GFP_RECLAIM | __GFP_IO | __GFP_FS);
 		sprintf(difference, "%lu", result );
+		nanodifference = kmalloc(sizeof(char) * 20, __GFP_RECLAIM | __GFP_IO | __GFP_FS);
+		sprintf(nanodifference, ".%.*lu", 9, nanoresult);
 		strcat(message,"elapsed time: ");
 		strcat(message, difference);
+		strcat(message, nanodifference);
 		strcat(message, "\n");
 
-
+		kfree(nanodifference);
+		kfree(difference);
+		
         	int len = strlen(message);
         	copy_to_user(buf, message, len);
 		time_spec1.tv_sec = time_spec2.tv_sec;
@@ -74,7 +89,7 @@ ssize_t xtime_proc_read(struct file *sp_file, char __user *buf, size_t size, lof
 			return 0;
 		printk(KERN_INFO "proc called read\n");
 		seconds = kmalloc(sizeof(char) * 20, __GFP_RECLAIM | __GFP_IO | __GFP_FS);
-		sprintf(seconds, "%lu", time_spec1.tv_sec);
+		sprintf(seconds, "%lu.%.*lu", time_spec1.tv_sec, 9, time_spec1.tv_nsec);
 		strcat(seconds,"\n");
 		strcat(message, seconds );
 		int len = strlen(message);
@@ -89,7 +104,6 @@ int xtime_proc_release(struct inode *sp_inode, struct file *sp_file)
 	printk(KERN_INFO "proc called release\n");
 	kfree(message);
 	kfree(seconds);
-	kfree(difference);
 	return 0;
 }
 
