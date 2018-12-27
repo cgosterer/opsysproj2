@@ -1,0 +1,12 @@
+A Basic kernel module named my_xtime, created to acquire current kernel time and elapsed kernel time
+since the last proc file read. Uses current_kernel_time() and stores the return value of that function.
+
+When my_xtime is loaded (using insmod), it will create a proc entry called /proc/timed. 
+When my_xtime is unloaded (using rmmod), /proc/timed is removed.
+
+
+To run: Run make to acquire the .ko files
+	insert the my_xtime module using insmod
+	use cat /proc/timed to get current time
+	further reads using "cat /proc/timed" will display not only current time but also elapsed time since last read
+	remove the my_xtime module using rmmod
