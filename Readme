@@ -6,7 +6,7 @@ When my_xtime is unloaded (using rmmod), /proc/timed is removed.
 
 
 To run: Run make to acquire the .ko files
-	insert the my_xtime module using insmod
+	insert the my_xtime module using "sudo insmod my_xtime.ko"
 	use cat /proc/timed to get current time
 	further reads using "cat /proc/timed" will display not only current time but also elapsed time since last read
-	remove the my_xtime module using rmmod
+	remove the my_xtime module using "sudo rmmod my_xtime.ko"
